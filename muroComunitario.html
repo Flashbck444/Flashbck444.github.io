@@ -69,9 +69,13 @@
     <img src="FlashbckTag.png" style="width:140px;height:105px;border-radius:50%;">
   </div>
 
+  <!-- Barra inferior -->
   <div class="barra-inferior">
     <button onclick="guardarDibujo()">Guardar dibujo</button>
     <input type="file" id="subirFoto" accept="image/*" />
+    <!-- Selector de color y grosor -->
+    <input type="color" id="colorLapiz" value="#FFFFFF" title="Color del lápiz">
+    <input type="range" id="grosorLapiz" min="1" max="20" value="3" title="Grosor del lápiz">
   </div>
 
   <canvas id="lienzo"></canvas>
@@ -110,9 +114,11 @@
   canvas.addEventListener("mouseup", () => { dibujando = false; ctx.beginPath(); });
   canvas.addEventListener("mousemove", (e) => {
     if (!dibujando) return;
-    ctx.lineWidth = 3;
+    const color = document.getElementById("colorLapiz").value;
+    const grosor = document.getElementById("grosorLapiz").value;
+    ctx.lineWidth = grosor;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = color;
     ctx.lineTo(e.offsetX, e.offsetY);
     ctx.stroke();
     ctx.beginPath();
