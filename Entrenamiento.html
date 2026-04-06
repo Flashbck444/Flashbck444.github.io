@@ -90,9 +90,6 @@
       word.className = "word";
       word.innerText = getRandomWord();
 
-      // Quitar color aleatorio — ya se fija en CSS a blanco
-      // word.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
-
       container.appendChild(word);
     }
   }
@@ -100,10 +97,14 @@
   function startWords() {
     const seconds = parseFloat(document.getElementById("intervalInput").value);
 
+    // Mostrar las palabras de inmediato
+    createWords();
+
     if (intervalId) {
       clearInterval(intervalId);
     }
 
+    // Cambiar palabras cada X segundos
     intervalId = setInterval(createWords, seconds * 1000);
   }
 </script>
