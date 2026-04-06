@@ -60,7 +60,11 @@
   fetch("https://raw.githubusercontent.com/mazyvan/most-common-spanish-words/master/most-common-spanish-words.txt")
   .then(response => response.text())
   .then(text => {
-    words = text.split("\n");
+    words = text
+      .split("\n")                  // separar por líneas
+      .flatMap(w => w.split("|"))  // separar si vienen con |
+      .map(w => w.trim())          // quitar espacios
+      .filter(w => w.length > 3);  // evitar palabras muy cortas
   });
 
   let intervalId = null;
