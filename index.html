@@ -135,6 +135,12 @@
         "FondoWeb9.JPG"
     ];
 
+    // precargar
+    imagenes.forEach(src => {
+        const img = new Image();
+        img.src = src;
+    });
+
     let index = 0;
     const inicio = document.getElementById("inicio");
 
