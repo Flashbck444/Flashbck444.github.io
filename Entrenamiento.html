@@ -57,12 +57,11 @@
 <script>
   let words = [];
 
-  fetch("https://raw.githubusercontent.com/words/an-array-of-spanish-words/master/index.json")
-    .then(response => response.json())
-    .then(data => {
-      words = data;
-      console.log("Palabras cargadas:", words.length);
-    });
+  fetch("https://raw.githubusercontent.com/mazyvan/most-common-spanish-words/master/most-common-spanish-words.txt")
+  .then(response => response.text())
+  .then(text => {
+    words = text.split("\n");
+  });
 
   let intervalId = null;
 
