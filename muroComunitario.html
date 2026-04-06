@@ -82,13 +82,13 @@ z-index: 1000;
   <button id="ningunoBtn">Ninguno</button>
 </div>
 
-<!-- CANVAS: fondo para imágenes y lienzo para dibujo -->
+<!-- CANVAS -->
 <canvas id="canvasFondo"></canvas>
 <canvas id="lienzo"></canvas>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
 // ---------- FIREBASE ----------
 const firebaseConfig = {
@@ -211,6 +211,7 @@ document.getElementById("subirFoto").addEventListener("change", function(e) {
   reader.readAsDataURL(archivo);
 });
 
+  <script type="module">
 // ---------- FUNCIONES TOUCH/MOUSE ----------
 function getPos(e, c=canvas) {
   let rect = c.getBoundingClientRect();
@@ -226,10 +227,13 @@ canvas.addEventListener("touchmove", moveDrawOrMove, { passive: false });
 canvas.addEventListener("mouseup", endDrawOrMove);
 canvas.addEventListener("mouseleave", endDrawOrMove);
 canvas.addEventListener("touchend", endDrawOrMove);
+canvas.addEventListener("dblclick", eliminarImagen);
 
+// Variables auxiliares para mover/redimensionar y dibujar
 let startResizeX = 0, startResizeY = 0;
-let prevX=0, prevY=0;
+let prevX = 0, prevY = 0;
 
+// ---------- FUNCIONES PRINCIPALES ----------
 function startDrawOrSelect(e) {
   e.preventDefault();
   const {x,y} = getPos(e);
@@ -239,14 +243,18 @@ function startDrawOrSelect(e) {
   prevX = x;
   prevY = y;
 
-  for (let i=imagenes.length-1;i>=0;i--) {
+  // Detectar imágenes
+  for (let i=imagenes.length-1; i>=0; i--) {
     const obj = imagenes[i];
-    const c = detectarEsquina(obj,x,y);
+    const c = detectarEsquina(obj, x, y);
     if (c) { imgSeleccionada=obj; redimensionando=false; corner=c; return; }
-    if (x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height) { imgSeleccionada=obj; offsetX=x-obj.x; offsetY=y-obj.y; return; }
+    if (x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height) { 
+      imgSeleccionada=obj; offsetX=x-obj.x; offsetY=y-obj.y; return; 
+    }
   }
 
-  if (modoActivo!=="ninguno") dibujando=true;
+  // Activar dibujo
+  if (modoActivo !== "ninguno") dibujando = true;
 }
 
 function moveDrawOrMove(e) {
@@ -256,41 +264,42 @@ function moveDrawOrMove(e) {
 
   // Mover/redimensionar imágenes
   if (corner && imgSeleccionada) {
-    const dx=x-startResizeX, dy=y-startResizeY;
-    if (!redimensionando && Math.sqrt(dx*dx+dy*dy)<umbralResize) return;
-    redimensionando=true;
-    const minSize=20;
+    const dx = x - startResizeX, dy = y - startResizeY;
+    if (!redimensionando && Math.sqrt(dx*dx + dy*dy) < umbralResize) return;
+    redimensionando = true;
+    const minSize = 20;
     switch(corner){
-      case "tl": imgSeleccionada.width+=imgSeleccionada.x-x; imgSeleccionada.height+=imgSeleccionada.y-y; imgSeleccionada.x=x; imgSeleccionada.y=y; break;
-      case "tr": imgSeleccionada.width=x-imgSeleccionada.x; imgSeleccionada.height+=imgSeleccionada.y-y; imgSeleccionada.y=y; break;
-      case "bl": imgSeleccionada.width+=imgSeleccionada.x-x; imgSeleccionada.height=y-imgSeleccionada.y; imgSeleccionada.x=x; break;
-      case "br": imgSeleccionada.width=x-imgSeleccionada.x; imgSeleccionada.height=y-imgSeleccionada.y; break;
+      case "tl": imgSeleccionada.width += imgSeleccionada.x - x; imgSeleccionada.height += imgSeleccionada.y - y; imgSeleccionada.x = x; imgSeleccionada.y = y; break;
+      case "tr": imgSeleccionada.width = x - imgSeleccionada.x; imgSeleccionada.height += imgSeleccionada.y - y; imgSeleccionada.y = y; break;
+      case "bl": imgSeleccionada.width += imgSeleccionada.x - x; imgSeleccionada.height = y - imgSeleccionada.y; imgSeleccionada.x = x; break;
+      case "br": imgSeleccionada.width = x - imgSeleccionada.x; imgSeleccionada.height = y - imgSeleccionada.y; break;
     }
-    if(imgSeleccionada.width<minSize) imgSeleccionada.width=minSize;
-    if(imgSeleccionada.height<minSize) imgSeleccionada.height=minSize;
-    startResizeX=x; startResizeY=y;
+    if (imgSeleccionada.width < minSize) imgSeleccionada.width = minSize;
+    if (imgSeleccionada.height < minSize) imgSeleccionada.height = minSize;
+    startResizeX = x; startResizeY = y;
     dibujarFondo();
     return;
   }
 
   if (imgSeleccionada && !corner) {
-    imgSeleccionada.x=x-offsetX;
-    imgSeleccionada.y=y-offsetY;
-    if(imgSeleccionada.y<0) imgSeleccionada.y=0;
-    if(imgSeleccionada.y+imgSeleccionada.height>canvas.height) imgSeleccionada.y=canvas.height-imgSeleccionada.height;
-    if(imgSeleccionada.x<0) imgSeleccionada.x=0;
-    if(imgSeleccionada.x+imgSeleccionada.width>canvas.width) imgSeleccionada.x=canvas.width-imgSeleccionada.width;
+    imgSeleccionada.x = x - offsetX;
+    imgSeleccionada.y = y - offsetY;
+    // Limitar dentro del canvas
+    if (imgSeleccionada.y < 0) imgSeleccionada.y = 0;
+    if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) imgSeleccionada.y = canvas.height - imgSeleccionada.height;
+    if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
+    if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) imgSeleccionada.x = canvas.width - imgSeleccionada.width;
     dibujarFondo();
   }
 
   // Dibujo
-  if (dibujando && modoActivo!=="ninguno") {
+  if (dibujando && modoActivo !== "ninguno") {
     ctx.lineWidth = document.getElementById("grosorLapiz").value;
     ctx.lineCap = "round";
-    ctx.strokeStyle = modoActivo==="goma" ? "rgba(0,0,0,1)" : colorInput.value;
+    ctx.strokeStyle = modoActivo === "goma" ? "#121212" : colorInput.value; // goma pinta transparente (color de fondo)
     ctx.beginPath();
-    ctx.moveTo(prevX,prevY);
-    ctx.lineTo(x,y);
+    ctx.moveTo(prevX, prevY);
+    ctx.lineTo(x, y);
     ctx.stroke();
     prevX = x;
     prevY = y;
@@ -298,26 +307,60 @@ function moveDrawOrMove(e) {
 }
 
 function endDrawOrMove(e) {
-  if(imgSeleccionada && imgSeleccionada.key) update(ref(db,"muro/"+imgSeleccionada.key),{ x:imgSeleccionada.x, y:imgSeleccionada.y, width:imgSeleccionada.width, height:imgSeleccionada.height });
-  imgSeleccionada=null;
-  dibujando=false;
-  redimensionando=false;
-  corner=null;
+  if (imgSeleccionada && imgSeleccionada.key) {
+    update(ref(db, "muro/" + imgSeleccionada.key), { x: imgSeleccionada.x, y: imgSeleccionada.y, width: imgSeleccionada.width, height: imgSeleccionada.height });
+  }
+  imgSeleccionada = null;
+  dibujando = false;
+  redimensionando = false;
+  corner = null;
 }
 
-// ---------- GUARDAR DIBUJO ----------
+// ---------- DOBLE CLICK PARA ELIMINAR IMAGEN ----------
+function eliminarImagen(e) {
+  const {x, y} = getPos(e);
+  for (let i = imagenes.length - 1; i >= 0; i--) {
+    const obj = imagenes[i];
+    if (x >= obj.x && x <= obj.x + obj.width && y >= obj.y && y <= obj.y + obj.height) {
+      if (obj.key) remove(ref(db, "muro/" + obj.key));
+      imagenes.splice(i, 1);
+      dibujarFondo();
+      return;
+    }
+  }
+}
+
+// ---------- GUARDAR TODO EL CANVAS (IMÁGENES + DIBUJO) ----------
 function guardarDibujo() {
-  const link=document.createElement('a');
-  link.download='mi_dibujo.png';
-  link.href=canvas.toDataURL();
+  // Crear canvas temporal
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  const tempCtx = tempCanvas.getContext("2d");
+
+  // Dibujar fondo + imágenes
+  tempCtx.drawImage(canvasFondo, 0, 0);
+
+  // Dibujar capa de dibujo
+  tempCtx.drawImage(canvas, 0, 0);
+
+  // Descargar
+  const link = document.createElement("a");
+  link.download = "mi_dibujo.png";
+  link.href = tempCanvas.toDataURL();
   link.click();
 }
 
-// ---------- DETECTAR ESQUINAS ----------
-function detectarEsquina(obj,x,y){
-  const size=10;
-  const corners=[{x:obj.x,y:obj.y,name:"tl"},{x:obj.x+obj.width,y:obj.y,name:"tr"},{x:obj.x,y:obj.y+obj.height,name:"bl"},{x:obj.x+obj.width,y:obj.y+obj.height,name:"br"}];
-  for(let c of corners) if(x>=c.x-size && x<=c.x+size && y>=c.y-size && y<=c.y+size) return c.name;
+// ---------- DETECTAR ESQUINAS PARA REDIMENSIONAR ----------
+function detectarEsquina(obj, x, y){
+  const size = 10;
+  const corners = [
+    {x: obj.x, y: obj.y, name:"tl"},
+    {x: obj.x + obj.width, y: obj.y, name:"tr"},
+    {x: obj.x, y: obj.y + obj.height, name:"bl"},
+    {x: obj.x + obj.width, y: obj.y + obj.height, name:"br"}
+  ];
+  for(let c of corners) if(x >= c.x - size && x <= c.x + size && y >= c.y - size && y <= c.y + size) return c.name;
   return null;
 }
 </script>
