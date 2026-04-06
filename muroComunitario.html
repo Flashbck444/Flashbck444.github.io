@@ -78,7 +78,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBwmJBZB2_1Vv3JsQjwlwmHfUIT0ZliAO8",
@@ -129,12 +129,33 @@
 
   function dibujarCanvas() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    // dibujar líneas (opcional, si quieres mantener el trazo)
-    // ctx.stroke(); 
     imagenes.forEach(obj => ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
   }
 
-  // Subir imagen al canvas
+  // FUNCION PARA CARGAR IMAGENES DE FIREBASE
+  const muroRef = ref(db, "muro");
+  onValue(muroRef, snapshot => {
+    imagenes.length = 0; // limpiar canvas antes de cargar
+    const datos = snapshot.val();
+    if (!datos) return;
+    Object.entries(datos).forEach(([key, item]) => {
+      const img = new Image();
+      img.src = item.imagen;
+      img.onload = () => {
+        imagenes.push({
+          img,
+          x: 50,
+          y: 50,
+          width: 200,
+          height: 150,
+          key: key // guardar key para eliminar en Firebase
+        });
+        dibujarCanvas();
+      };
+    });
+  });
+
+  // Subir imagen al canvas y a Firebase
   document.getElementById("subirFoto").addEventListener("change", function(e) {
     const archivo = e.target.files[0];
     if (!archivo) return;
@@ -143,11 +164,11 @@
       const img = new Image();
       img.src = ev.target.result;
       img.onload = () => {
-        imagenes.push({ img, x:50, y:50, width:200, height:150 });
+        // Subir a Firebase
+        const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now() });
+        imagenes.push({ img, x:50, y:50, width:200, height:150, key: newRef.key });
         dibujarCanvas();
       };
-      // Guardar en Firebase si quieres mantener historial
-      push(ref(db, "muro"), { imagen: ev.target.result, fecha: Date.now() });
     };
     reader.readAsDataURL(archivo);
   });
@@ -170,15 +191,13 @@
     if (!imgSeleccionada) return;
     imgSeleccionada.x = e.offsetX - offsetX;
     imgSeleccionada.y = e.offsetY - offsetY;
-
-    // Limitar movimiento dentro del canvas (no tocar barras)
+    // Limitar movimiento dentro del canvas
     if (imgSeleccionada.y < 70) imgSeleccionada.y = 70;
     if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) 
       imgSeleccionada.y = canvas.height - imgSeleccionada.height;
     if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
     if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) 
       imgSeleccionada.x = canvas.width - imgSeleccionada.width;
-
     dibujarCanvas();
   });
   canvas.addEventListener("mouseup", () => { imgSeleccionada = null; });
@@ -190,6 +209,8 @@
     for (let i = imagenes.length-1; i>=0; i--) {
       const obj = imagenes[i];
       if (x >= obj.x && x <= obj.x+obj.width && y >= obj.y && y <= obj.y+obj.height) {
+        // Eliminar de Firebase
+        if (obj.key) remove(ref(db, "muro/" + obj.key));
         imagenes.splice(i,1);
         dibujarCanvas();
         break;
