@@ -1,1 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi muro colaborativo</title>
+  <style>
+    body {
+      margin: 0;
+      background: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 30px;
+    }
+
+    h1 { margin-bottom: 20px; }
+
+    #lienzo {
+      border: 2px solid white;
+      background: #1e1e1e;
+      cursor: crosshair;
+    }
+
+    .zona {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #galeria {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .post {
+      background: #1d1d1d;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .post img {
+      width: 100%;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Mi muro colaborativo</h1>
+
+  <canvas id="lienzo" width="700" height="350"></canvas>
+
+  <div class="zona">
+    <button onclick="guardarDibujo()">Guardar dibujo</button>
+    <input type="file" id="subirFoto" accept="image/*" />
+  </div>
+
+  <div id="galeria"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // ⚠️ PEGA AQUÍ TU CONFIG DE FIREBASE
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.firebasestorage.app",
+      messagingSenderId: "123456789",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const canvas = document.getElementById("lienzo");
+    const ctx = canvas.getContext("2d");
+    const galeria = document.getElementById("galeria");
+    let dibujando = false;
+
+    canvas.addEventListener("mousedown", () => dibujando = true);
+    canvas.addEventListener("mouseup", () => {
+      dibujando = false;
+      ctx.beginPath();
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!dibujando) return;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "white";
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    window.guardarDibujo = async function () {
+      const data = canvas.toDataURL("image/png");
+      await addDoc(collection(db, "muro"), {
+        imagen: data,
+        fecha: Date.now()
+      });
+      cargarMuro();
+    };
+
+    document.getElementById("subirFoto").addEventListener("change", async (e) => {
+      const archivo = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = async function (ev) {
+        await addDoc(collection(db, "muro"), {
+          imagen: ev.target.result,
+          fecha: Date.now()
+        });
+        cargarMuro();
+      };
+      reader.readAsDataURL(archivo);
+    });
+
+    async function cargarMuro() {
+      galeria.innerHTML = "";
+      const q = query(collection(db, "muro"), orderBy("fecha", "desc"));
+      const docs = await getDocs(q);
+
+      docs.forEach((doc) => {
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `<img src="${doc.data().imagen}">`;
+        galeria.appendChild(div);
+      });
+    }
+
+    cargarMuro();
+  </script>
+</body>
+</html>
 
