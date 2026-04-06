@@ -42,22 +42,6 @@
       cursor: crosshair;
       background: transparent;
     }
-    #galeria {
-      margin-top: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-      padding: 20px;
-    }
-    .post {
-      background: #1d1d1d;
-      border-radius: 16px;
-      padding: 10px;
-    }
-    .post img {
-      width: 100%;
-      border-radius: 12px;
-    }
   </style>
 </head>
 <body>
@@ -78,10 +62,10 @@
     font-family: Arial, sans-serif;
     z-index: 1000;
   ">
-    <a href="index.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;display:flex;align-items:center;gap:20px;">Inicio</a>
-    <a href="guias.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;display:flex;align-items:center;gap:20px;">Guías</a>
-    <a href="muroComunitario.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;display:flex;align-items:center;gap:20px;">Muro comunitario</a>
-    <a href="muro.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;display:flex;align-items:center;gap:20px;">Mi muro</a>
+    <a href="index.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Inicio</a>
+    <a href="guias.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Guías</a>
+    <a href="muroComunitario.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Muro comunitario</a>
+    <a href="muro.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Mi muro</a>
     <img src="FlashbckTag.png" style="width:140px;height:105px;border-radius:50%;">
   </div>
 
@@ -91,13 +75,11 @@
   </div>
 
   <canvas id="lienzo"></canvas>
-  <div id="galeria"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
-  // Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyBwmJBZB2_1Vv3JsQjwlwmHfUIT0ZliAO8",
     authDomain: "flashbck-5b9be.firebaseapp.com",
@@ -111,16 +93,15 @@
 
   const canvas = document.getElementById("lienzo");
   const ctx = canvas.getContext("2d");
-  const galeria = document.getElementById("galeria");
 
   function ajustarCanvas() {
     canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - 70 - 70; // espacio barras superior e inferior
+    canvas.height = window.innerHeight - 70 - 70;
   }
   ajustarCanvas();
   window.addEventListener("resize", ajustarCanvas);
 
-  // Para dibujar líneas
+  // DIBUJO DE LÍNEAS
   let dibujando = false;
   canvas.addEventListener("mousedown", () => dibujando = true);
   canvas.addEventListener("mouseup", () => { dibujando = false; ctx.beginPath(); });
@@ -140,22 +121,20 @@
     push(ref(db, "muro"), { imagen: data, fecha: Date.now() });
   };
 
-  // ===================== IMÁGENES MÓVILES =====================
+  // IMÁGENES MÓVILES EN EL CANVAS
   const imagenes = [];
   let imgSeleccionada = null;
   let offsetX = 0;
   let offsetY = 0;
 
   function dibujarCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // dibujar líneas previas
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 3;
-    // dibujar imágenes
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // dibujar líneas (opcional, si quieres mantener el trazo)
+    // ctx.stroke(); 
     imagenes.forEach(obj => ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
   }
 
-  // Subir imagen
+  // Subir imagen al canvas
   document.getElementById("subirFoto").addEventListener("change", function(e) {
     const archivo = e.target.files[0];
     if (!archivo) return;
@@ -167,6 +146,7 @@
         imagenes.push({ img, x:50, y:50, width:200, height:150 });
         dibujarCanvas();
       };
+      // Guardar en Firebase si quieres mantener historial
       push(ref(db, "muro"), { imagen: ev.target.result, fecha: Date.now() });
     };
     reader.readAsDataURL(archivo);
@@ -186,20 +166,21 @@
       }
     }
   });
-
   canvas.addEventListener("mousemove", e => {
     if (!imgSeleccionada) return;
     imgSeleccionada.x = e.offsetX - offsetX;
     imgSeleccionada.y = e.offsetY - offsetY;
 
-    // Limitar movimiento para no tocar barras
+    // Limitar movimiento dentro del canvas (no tocar barras)
     if (imgSeleccionada.y < 70) imgSeleccionada.y = 70;
     if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) 
       imgSeleccionada.y = canvas.height - imgSeleccionada.height;
+    if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
+    if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) 
+      imgSeleccionada.x = canvas.width - imgSeleccionada.width;
 
     dibujarCanvas();
   });
-
   canvas.addEventListener("mouseup", () => { imgSeleccionada = null; });
 
   // Eliminar con doble clic
@@ -216,22 +197,6 @@
     }
   });
 
-  // ===================== GALERÍA =====================
-  function cargarMuro() {
-    onValue(ref(db, "muro"), snapshot => {
-      galeria.innerHTML = "";
-      const datos = snapshot.val();
-      if (!datos) return;
-      Object.values(datos).reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "post";
-        div.innerHTML = `<img src="${item.imagen}">`;
-        galeria.appendChild(div);
-      });
-    });
-  }
-  cargarMuro();
 </script>
-
 </body>
 </html>
