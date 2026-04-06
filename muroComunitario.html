@@ -59,7 +59,7 @@
     align-items: center;
     justify-content: flex-end;
     padding-right: 10px;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     z-index: 1000;
   ">
     <a href="index.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Inicio</a>
@@ -78,7 +78,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBwmJBZB2_1Vv3JsQjwlwmHfUIT0ZliAO8",
@@ -94,7 +94,7 @@
   const canvas = document.getElementById("lienzo");
   const ctx = canvas.getContext("2d");
 
-  const alturaBarraSuperior = 0; // límite superior
+  const alturaBarraSuperior = 0; // límite superior = altura de la barra
   const alturaBarraInferior = 70; // límite inferior
 
   function ajustarCanvas() {
@@ -147,8 +147,8 @@
       img.onload = () => {
         imagenes.push({
           img,
-          x: 50,
-          y: 50,
+          x: item.x ?? 50,
+          y: item.y ?? alturaBarraSuperior,
           width: 200,
           height: 150,
           key: key
@@ -167,7 +167,7 @@
       const img = new Image();
       img.src = ev.target.result;
       img.onload = () => {
-        const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now() });
+        const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now(), x: 50, y: alturaBarraSuperior });
         imagenes.push({ img, x:50, y:alturaBarraSuperior, width:200, height:150, key: newRef.key });
         dibujarCanvas();
       };
@@ -208,7 +208,16 @@
     dibujarCanvas();
   });
 
-  canvas.addEventListener("mouseup", () => { imgSeleccionada = null; });
+  canvas.addEventListener("mouseup", () => {
+    if (imgSeleccionada && imgSeleccionada.key) {
+      // GUARDAR NUEVA POSICIÓN EN FIREBASE
+      update(ref(db, "muro/" + imgSeleccionada.key), {
+        x: imgSeleccionada.x,
+        y: imgSeleccionada.y
+      });
+    }
+    imgSeleccionada = null;
+  });
 
   // ELIMINAR IMÁGENES CON DOBLE CLIC
   canvas.addEventListener("dblclick", e => {
