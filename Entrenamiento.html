@@ -55,44 +55,16 @@
 <div id="centerContainer"></div>
 
 <script>
-  const words = [
-    "Hola", "Mundo", "Código", "Vector", "Banach",
-    "Espacio", "Matemáticas", "Azar", "Pantalla", "Creatividad"
-  ];
+  let words = [];
 
-  let intervalId = null;
+  fetch("https://raw.githubusercontent.com/words/an-array-of-spanish-words/master/index.json")
+    .then(response => response.json())
+    .then(data => {
+      words = data;
+    });
 
   function getRandomWord() {
     return words[Math.floor(Math.random() * words.length)];
-  }
-
-  function createWords() {
-    const container = document.getElementById("centerContainer");
-    const count = parseInt(document.getElementById("countInput").value);
-
-    // Limpiar antes de mostrar nuevas
-    container.innerHTML = "";
-
-    for (let i = 0; i < count; i++) {
-      const word = document.createElement("div");
-      word.className = "word";
-      word.innerText = getRandomWord();
-
-      // Color aleatorio
-      word.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
-
-      container.appendChild(word);
-    }
-  }
-
-  function startWords() {
-    const seconds = parseFloat(document.getElementById("intervalInput").value);
-
-    if (intervalId) {
-      clearInterval(intervalId);
-    }
-
-    intervalId = setInterval(createWords, seconds * 1000);
   }
 </script>
 
