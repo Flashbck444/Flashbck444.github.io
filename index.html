@@ -95,22 +95,19 @@
     <div style="margin-left:220px; width:calc(100% - 220px);">
 
         <section id="inicio" style="
-            height:100vh;
-            background-image:url('FondoWeb.png');
-            background-size:cover;
-            background-position:center;
-            color:white;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            flex-direction:column;
-            text-shadow:2px 2px 10px black;
-        ">
-        
-        <p></p>
+    height:100vh;
+    background-size:cover;
+    background-position:center;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    text-shadow:2px 2px 10px black;
+">
+    <h1>Bienvenido</h1>
+</section>
             
-        </section>
-
         <section id="sobre" style="height:100vh; padding:40px; background-color:#181818;">
             <h1 style="color:white;">Sobre mí</h1>
             <p style="color:white;">Me gusta crear cosas. Soy freestyler nub.</p>
@@ -126,7 +123,26 @@
             <p></p>
         </section>
 
-    </div>
+        <script>
+    const imagenes = [
+        "FondoWeb.png",
+        "Fondo2.png",
+        "Fondo3.png"
+    ];
 
+    let index = 0;
+    const inicio = document.getElementById("inicio");
+
+    function cambiarFondo() {
+        inicio.style.backgroundImage = `url('${imagenes[index]}')`;
+        index = (index + 1) % imagenes.length;
+    }
+
+    cambiarFondo(); // primera imagen
+    setInterval(cambiarFondo, 4000); // cambia cada 4 segundos
+</script>
+
+    </div>
+    
 </body>
 </html>
