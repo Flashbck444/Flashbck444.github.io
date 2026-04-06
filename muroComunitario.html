@@ -254,7 +254,11 @@ function startDrawOrSelect(e) {
     if (x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height) { imgSeleccionada = obj; offsetX = x-obj.x; offsetY = y-obj.y; return; }
   }
 
-  if (modoActivo !== "ninguno") dibujando = true;
+  if (modoActivo !== "ninguno") {
+    dibujando = true;
+    ctx.beginPath(); // Comienza un nuevo trazo
+    ctx.moveTo(x, y);
+  }
 }
 
 function moveDrawOrMove(e) {
@@ -309,11 +313,15 @@ function moveDrawOrMove(e) {
 }
 
 function endDrawOrMove(e) {
+  // Guardar posición final de la imagen
   if(imgSeleccionada && imgSeleccionada.key) update(ref(db, "muro/" + imgSeleccionada.key), { x: imgSeleccionada.x, y: imgSeleccionada.y, width: imgSeleccionada.width, height: imgSeleccionada.height });
+  
+  // Levantar lápiz y limpiar estados
   imgSeleccionada = null;
   dibujando = false;
   redimensionando = false;
   corner = null;
+  ctx.beginPath(); // Levantar el lápiz
 }
 
 // ----------------- GUARDAR DIBUJO -----------------
