@@ -40,7 +40,6 @@
     display: block;
     margin-top: 70px;    
     margin-bottom: 70px;  
-    cursor: crosshair;
     background: transparent;
   }
 </style>
@@ -76,7 +75,9 @@ z-index: 1000;
   <input type="file" id="subirFoto" accept="image/*" />
   <input type="color" id="colorLapiz" value="#FFFFFF" title="Color del lápiz">
   <input type="range" id="grosorLapiz" min="1" max="20" value="3" title="Grosor del lápiz">
+  <button id="lapizBtn">Lápiz</button>
   <button id="gomaBtn">Goma</button>
+  <button id="ningunoBtn">Ninguno</button>
 </div>
 
 <canvas id="lienzo"></canvas>
@@ -109,31 +110,58 @@ function ajustarCanvas() {
 ajustarCanvas();
 window.addEventListener("resize", ajustarCanvas);
 
-// ----------------- LÁPIZ Y GOMA -----------------
+// ----------------- MODO DE DIBUJO -----------------
 let dibujando = false;
-let modoGoma = false;
+let modoActivo = "lapiz"; // "lapiz", "goma", "ninguno"
 const colorInput = document.getElementById("colorLapiz");
+const lapizBtn = document.getElementById("lapizBtn");
 const gomaBtn = document.getElementById("gomaBtn");
+const ningunoBtn = document.getElementById("ningunoBtn");
 
-gomaBtn.addEventListener("click", () => {
-  modoGoma = !modoGoma;
-  gomaBtn.style.backgroundColor = modoGoma ? "#333" : "#121212"; // menos oscuro
+function actualizarBotones() {
+  lapizBtn.style.backgroundColor = modoActivo === "lapiz" ? "#333" : "#121212";
+  gomaBtn.style.backgroundColor = modoActivo === "goma" ? "#333" : "#121212";
+  ningunoBtn.style.backgroundColor = modoActivo === "ninguno" ? "#333" : "#121212";
+}
+
+function actualizarCursor() {
+  switch(modoActivo) {
+    case "lapiz":
+      canvas.style.cursor = "crosshair";
+      break;
+    case "goma":
+      canvas.style.cursor = "cell";
+      break;
+    case "ninguno":
+      canvas.style.cursor = "default";
+      break;
+  }
+}
+
+lapizBtn.addEventListener("click", () => { modoActivo = "lapiz"; actualizarBotones(); actualizarCursor(); });
+gomaBtn.addEventListener("click", () => { modoActivo = "goma"; actualizarBotones(); actualizarCursor(); });
+ningunoBtn.addEventListener("click", () => { modoActivo = "ninguno"; actualizarBotones(); actualizarCursor(); });
+
+actualizarBotones();
+actualizarCursor();
+
+// ----------------- DIBUJAR -----------------
+canvas.addEventListener("mousedown", () => { 
+  if (modoActivo !== "ninguno") dibujando = true; 
 });
-
-canvas.addEventListener("mousedown", () => dibujando = true);
 canvas.addEventListener("mouseup", () => { dibujando = false; ctx.beginPath(); });
-
 canvas.addEventListener("mousemove", (e) => {
   if (!dibujando) return;
+  if (modoActivo === "ninguno") return; // No dibujar si es ninguno
 
   const grosor = document.getElementById("grosorLapiz").value;
   ctx.lineWidth = grosor;
   ctx.lineCap = "round";
 
-  if (modoGoma) {
+  if (modoActivo === "goma") {
     ctx.globalCompositeOperation = "destination-out";
     ctx.strokeStyle = "rgba(0,0,0,1)";
-  } else {
+  } else if (modoActivo === "lapiz") {
     ctx.globalCompositeOperation = "source-over";
     ctx.strokeStyle = colorInput.value;
   }
@@ -144,11 +172,6 @@ canvas.addEventListener("mousemove", (e) => {
   ctx.moveTo(e.offsetX, e.offsetY);
 });
 
-window.guardarDibujo = function() {
-  const data = canvas.toDataURL("image/png");
-  push(ref(db, "muro"), { imagen: data, fecha: Date.now() });
-};
-
 // ----------------- IMÁGENES -----------------
 const imagenes = [];
 let imgSeleccionada = null;
@@ -156,7 +179,7 @@ let offsetX = 0;
 let offsetY = 0;
 let redimensionando = false;
 let corner = null;
-const umbralResize = 45; // px mínimo para empezar a redimensionar
+const umbralResize = 45;
 
 function dibujarCanvas() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -164,7 +187,7 @@ function dibujarCanvas() {
   if (imgSeleccionada) {
     const size = 10;
     ctx.fillStyle = "white";
-    [[0,0],[1,0],[0,1],[1,1]].forEach(([dx,dy], i) => {
+    [[0,0],[1,0],[0,1],[1,1]].forEach(([dx,dy]) => {
       const cx = imgSeleccionada.x + dx*imgSeleccionada.width - size/2;
       const cy = imgSeleccionada.y + dy*imgSeleccionada.height - size/2;
       ctx.fillRect(cx, cy, size, size);
@@ -172,6 +195,7 @@ function dibujarCanvas() {
   }
 }
 
+// Cargar imágenes desde Firebase
 const muroRef = ref(db, "muro");
 onValue(muroRef, snapshot => {
   imagenes.length = 0;
@@ -189,6 +213,7 @@ onValue(muroRef, snapshot => {
   });
 });
 
+// Subir foto
 document.getElementById("subirFoto").addEventListener("change", function(e) {
   const archivo = e.target.files[0];
   if (!archivo) return;
@@ -211,7 +236,7 @@ document.getElementById("subirFoto").addEventListener("change", function(e) {
   reader.readAsDataURL(archivo);
 });
 
-// ----------------- ARRastrar Y REDIMENSIONAR -----------------
+// ----------------- ARRASTRAR Y REDIMENSIONAR -----------------
 function detectarEsquina(obj, x, y) {
   const size = 10;
   const corners = [
@@ -220,9 +245,7 @@ function detectarEsquina(obj, x, y) {
     {x: obj.x, y: obj.y+obj.height, name:"bl"},
     {x: obj.x+obj.width, y: obj.y+obj.height, name:"br"}
   ];
-  for (let c of corners) {
-    if (x >= c.x-size && x <= c.x+size && y >= c.y-size && y <= c.y+size) return c.name;
-  }
+  for (let c of corners) if (x>=c.x-size && x<=c.x+size && y>=c.y-size && y<=c.y+size) return c.name;
   return null;
 }
 
@@ -241,31 +264,32 @@ canvas.addEventListener("mousedown", e => {
     const c = detectarEsquina(obj, x, y);
     if (c) {
       imgSeleccionada = obj;
-      redimensionando = false; // aún no empieza, requiere umbral
+      redimensionando = false;
       corner = c;
       return;
     }
-    if (x >= obj.x && x <= obj.x+obj.width && y >= obj.y && y <= obj.y+obj.height) {
+    if (x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height) {
       imgSeleccionada = obj;
       offsetX = x - obj.x;
       offsetY = y - obj.y;
       return;
     }
   }
+
+  // Evitar dibujar si no es lápiz/goma
+  if (modoActivo === "ninguno") dibujando = false;
 });
 
 canvas.addEventListener("mousemove", e => {
   const x = e.offsetX;
   const y = e.offsetY;
 
-  // REDIMENSIONAMIENTO
+  // Redimensionar
   if (corner && imgSeleccionada) {
     const dx = x - startResizeX;
     const dy = y - startResizeY;
-    if (!redimensionando) {
-      if (Math.sqrt(dx*dx + dy*dy) < umbralResize) return;
-      redimensionando = true;
-    }
+    if (!redimensionando && Math.sqrt(dx*dx + dy*dy) < umbralResize) return;
+    redimensionando = true;
 
     const minSize = 20;
     switch(corner) {
@@ -299,7 +323,7 @@ canvas.addEventListener("mousemove", e => {
     return;
   }
 
-  // MOVER IMÁGENES
+  // Mover imágenes
   if (imgSeleccionada && !corner) {
     imgSeleccionada.x = x - offsetX;
     imgSeleccionada.y = y - offsetY;
@@ -325,21 +349,6 @@ canvas.addEventListener("mouseup", () => {
   imgSeleccionada = null;
   redimensionando = false;
   corner = null;
-});
-
-// ELIMINAR IMÁGENES
-canvas.addEventListener("dblclick", e => {
-  const x = e.offsetX;
-  const y = e.offsetY;
-  for (let i = imagenes.length-1; i>=0; i--) {
-    const obj = imagenes[i];
-    if (x >= obj.x && x <= obj.x+obj.width && y >= obj.y && y <= obj.y+obj.height) {
-      if (obj.key) remove(ref(db, "muro/" + obj.key));
-      imagenes.splice(i,1);
-      dibujarCanvas();
-      break;
-    }
-  }
 });
 </script>
 </body>
