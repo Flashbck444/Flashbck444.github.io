@@ -73,7 +73,6 @@
   <div class="barra-inferior">
     <button onclick="guardarDibujo()">Guardar dibujo</button>
     <input type="file" id="subirFoto" accept="image/*" />
-    <!-- Selector de color y grosor -->
     <input type="color" id="colorLapiz" value="#FFFFFF" title="Color del lápiz">
     <input type="range" id="grosorLapiz" min="1" max="20" value="3" title="Grosor del lápiz">
   </div>
@@ -98,8 +97,8 @@
   const canvas = document.getElementById("lienzo");
   const ctx = canvas.getContext("2d");
 
-  const alturaBarraSuperior = 0; // límite superior = altura de la barra
-  const alturaBarraInferior = 70; // límite inferior
+  const alturaBarraSuperior = 0;
+  const alturaBarraInferior = 70;
 
   function ajustarCanvas() {
     canvas.width = window.innerWidth;
@@ -130,7 +129,7 @@
     push(ref(db, "muro"), { imagen: data, fecha: Date.now() });
   };
 
-  // IMÁGENES MÓVILES EN EL CANVAS
+  // IMÁGENES MÓVILES
   const imagenes = [];
   let imgSeleccionada = null;
   let offsetX = 0;
@@ -141,22 +140,23 @@
     imagenes.forEach(obj => ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
   }
 
-  // CARGAR IMÁGENES DE FIREBASE AL RECARGAR
   const muroRef = ref(db, "muro");
   onValue(muroRef, snapshot => {
-    imagenes.length = 0; // limpiar canvas antes de cargar
+    imagenes.length = 0;
     const datos = snapshot.val();
     if (!datos) return;
     Object.entries(datos).forEach(([key, item]) => {
       const img = new Image();
       img.src = item.imagen;
       img.onload = () => {
+        const w = item.width || img.width;
+        const h = item.height || img.height;
         imagenes.push({
           img,
           x: item.x ?? 50,
           y: item.y ?? alturaBarraSuperior,
-          width: 200,
-          height: 150,
+          width: w,
+          height: h,
           key: key
         });
         dibujarCanvas();
@@ -164,7 +164,6 @@
     });
   });
 
-  // SUBIR NUEVAS IMÁGENES
   document.getElementById("subirFoto").addEventListener("change", function(e) {
     const archivo = e.target.files[0];
     if (!archivo) return;
@@ -173,8 +172,15 @@
       const img = new Image();
       img.src = ev.target.result;
       img.onload = () => {
-        const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now(), x: 50, y: alturaBarraSuperior });
-        imagenes.push({ img, x:50, y:alturaBarraSuperior, width:200, height:150, key: newRef.key });
+        // Mantener resolución original o escalar si es demasiado grande
+        const maxWidth = 500;
+        const maxHeight = 500;
+        let ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        let w = img.width * ratio;
+        let h = img.height * ratio;
+
+        const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now(), x: 50, y: alturaBarraSuperior, width: w, height: h });
+        imagenes.push({ img, x:50, y:alturaBarraSuperior, width:w, height:h, key: newRef.key });
         dibujarCanvas();
       };
     };
@@ -201,12 +207,10 @@
     imgSeleccionada.x = e.offsetX - offsetX;
     imgSeleccionada.y = e.offsetY - offsetY;
 
-    // LÍMITES SUPERIOR E INFERIOR
     if (imgSeleccionada.y < alturaBarraSuperior) imgSeleccionada.y = alturaBarraSuperior;
     if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) 
       imgSeleccionada.y = canvas.height - imgSeleccionada.height;
 
-    // LÍMITES LATERALES
     if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
     if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) 
       imgSeleccionada.x = canvas.width - imgSeleccionada.width;
@@ -216,7 +220,6 @@
 
   canvas.addEventListener("mouseup", () => {
     if (imgSeleccionada && imgSeleccionada.key) {
-      // GUARDAR NUEVA POSICIÓN EN FIREBASE
       update(ref(db, "muro/" + imgSeleccionada.key), {
         x: imgSeleccionada.x,
         y: imgSeleccionada.y
@@ -225,7 +228,7 @@
     imgSeleccionada = null;
   });
 
-  // ELIMINAR IMÁGENES CON DOBLE CLIC
+  // ELIMINAR IMÁGENES
   canvas.addEventListener("dblclick", e => {
     const x = e.offsetX;
     const y = e.offsetY;
@@ -239,6 +242,7 @@
       }
     }
   });
+
 </script>
 
 </body>
