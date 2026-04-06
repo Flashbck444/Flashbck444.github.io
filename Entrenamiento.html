@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Palabras aleatorias</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: white;
+    }
+
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .word {
+      position: absolute;
+      font-size: 20px;
+      animation: fade 3s linear forwards;
+    }
+
+    @keyframes fade {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <label>Intervalo (segundos): </label>
+  <input type="number" id="intervalInput" value="2" min="1">
+  <button onclick="startWords()">Iniciar</button>
+</div>
+
+<script>
+  const words = [
+    "Hola", "Mundo", "Código", "Vector", "Banach",
+    "Espacio", "Matemáticas", "Azar", "Pantalla", "Creatividad"
+  ];
+
+  let intervalId = null;
+
+  function getRandomWord() {
+    return words[Math.floor(Math.random() * words.length)];
+  }
+
+  function createWord() {
+    const word = document.createElement("div");
+    word.className = "word";
+    word.innerText = getRandomWord();
+
+    // Posición aleatoria
+    word.style.left = Math.random() * window.innerWidth + "px";
+    word.style.top = Math.random() * window.innerHeight + "px";
+
+    // Color aleatorio
+    word.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+
+    document.body.appendChild(word);
+
+    // Eliminar después de animación
+    setTimeout(() => {
+      word.remove();
+    }, 3000);
+  }
+
+  function startWords() {
+    const seconds = parseFloat(document.getElementById("intervalInput").value);
+
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+
+    intervalId = setInterval(createWord, seconds * 1000);
+  }
+</script>
+
+</body>
+</html>
