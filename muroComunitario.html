@@ -75,6 +75,7 @@
     <input type="file" id="subirFoto" accept="image/*" />
     <input type="color" id="colorLapiz" value="#FFFFFF" title="Color del lápiz">
     <input type="range" id="grosorLapiz" min="1" max="20" value="3" title="Grosor del lápiz">
+    <button id="gomaBtn">Goma</button>
   </div>
 
   <canvas id="lienzo"></canvas>
@@ -107,17 +108,35 @@
   ajustarCanvas();
   window.addEventListener("resize", ajustarCanvas);
 
-  // DIBUJO DE LÍNEAS
+  // DIBUJO DE LÍNEAS CON LÁPIZ Y GOMA
   let dibujando = false;
+  let modoGoma = false; // nueva variable para la goma
+  const colorInput = document.getElementById("colorLapiz");
+  const gomaBtn = document.getElementById("gomaBtn");
+
+  gomaBtn.addEventListener("click", () => {
+    modoGoma = !modoGoma;
+    gomaBtn.style.backgroundColor = modoGoma ? "#555" : "#121212";
+  });
+
   canvas.addEventListener("mousedown", () => dibujando = true);
   canvas.addEventListener("mouseup", () => { dibujando = false; ctx.beginPath(); });
+
   canvas.addEventListener("mousemove", (e) => {
     if (!dibujando) return;
-    const color = document.getElementById("colorLapiz").value;
+
     const grosor = document.getElementById("grosorLapiz").value;
     ctx.lineWidth = grosor;
     ctx.lineCap = "round";
-    ctx.strokeStyle = color;
+
+    if (modoGoma) {
+      ctx.globalCompositeOperation = "destination-out"; // borra
+      ctx.strokeStyle = "rgba(0,0,0,1)";
+    } else {
+      ctx.globalCompositeOperation = "source-over"; // dibuja normal
+      ctx.strokeStyle = colorInput.value;
+    }
+
     ctx.lineTo(e.offsetX, e.offsetY);
     ctx.stroke();
     ctx.beginPath();
@@ -242,7 +261,6 @@
       }
     }
   });
-
 </script>
 
 </body>
