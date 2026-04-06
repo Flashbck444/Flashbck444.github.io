@@ -94,9 +94,12 @@
   const canvas = document.getElementById("lienzo");
   const ctx = canvas.getContext("2d");
 
+  const alturaBarraSuperior = 70; // límite superior
+  const alturaBarraInferior = 70; // límite inferior
+
   function ajustarCanvas() {
     canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - 70 - 70;
+    canvas.height = window.innerHeight - alturaBarraSuperior - alturaBarraInferior;
   }
   ajustarCanvas();
   window.addEventListener("resize", ajustarCanvas);
@@ -132,7 +135,7 @@
     imagenes.forEach(obj => ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
   }
 
-  // FUNCION PARA CARGAR IMAGENES DE FIREBASE
+  // CARGAR IMÁGENES DE FIREBASE AL RECARGAR
   const muroRef = ref(db, "muro");
   onValue(muroRef, snapshot => {
     imagenes.length = 0; // limpiar canvas antes de cargar
@@ -148,14 +151,14 @@
           y: 50,
           width: 200,
           height: 150,
-          key: key // guardar key para eliminar en Firebase
+          key: key
         });
         dibujarCanvas();
       };
     });
   });
 
-  // Subir imagen al canvas y a Firebase
+  // SUBIR NUEVAS IMÁGENES
   document.getElementById("subirFoto").addEventListener("change", function(e) {
     const archivo = e.target.files[0];
     if (!archivo) return;
@@ -164,16 +167,15 @@
       const img = new Image();
       img.src = ev.target.result;
       img.onload = () => {
-        // Subir a Firebase
         const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now() });
-        imagenes.push({ img, x:50, y:50, width:200, height:150, key: newRef.key });
+        imagenes.push({ img, x:50, y:alturaBarraSuperior, width:200, height:150, key: newRef.key });
         dibujarCanvas();
       };
     };
     reader.readAsDataURL(archivo);
   });
 
-  // Arrastrar imágenes
+  // ARRASTRAR IMÁGENES
   canvas.addEventListener("mousedown", e => {
     const x = e.offsetX;
     const y = e.offsetY;
@@ -187,29 +189,34 @@
       }
     }
   });
+
   canvas.addEventListener("mousemove", e => {
     if (!imgSeleccionada) return;
     imgSeleccionada.x = e.offsetX - offsetX;
     imgSeleccionada.y = e.offsetY - offsetY;
-    // Limitar movimiento dentro del canvas
-    if (imgSeleccionada.y < 70) imgSeleccionada.y = 70;
+
+    // LÍMITES SUPERIOR E INFERIOR
+    if (imgSeleccionada.y < alturaBarraSuperior) imgSeleccionada.y = alturaBarraSuperior;
     if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) 
       imgSeleccionada.y = canvas.height - imgSeleccionada.height;
+
+    // LÍMITES LATERALES
     if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
     if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) 
       imgSeleccionada.x = canvas.width - imgSeleccionada.width;
+
     dibujarCanvas();
   });
+
   canvas.addEventListener("mouseup", () => { imgSeleccionada = null; });
 
-  // Eliminar con doble clic
+  // ELIMINAR IMÁGENES CON DOBLE CLIC
   canvas.addEventListener("dblclick", e => {
     const x = e.offsetX;
     const y = e.offsetY;
     for (let i = imagenes.length-1; i>=0; i--) {
       const obj = imagenes[i];
       if (x >= obj.x && x <= obj.x+obj.width && y >= obj.y && y <= obj.y+obj.height) {
-        // Eliminar de Firebase
         if (obj.key) remove(ref(db, "muro/" + obj.key));
         imagenes.splice(i,1);
         dibujarCanvas();
@@ -217,7 +224,7 @@
       }
     }
   });
-
 </script>
+
 </body>
 </html>
