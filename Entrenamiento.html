@@ -21,25 +21,45 @@
       border-radius: 8px;
     }
 
-    .word {
+    #centerContainer {
       position: absolute;
-      font-size: 20px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+      width: 80%;
+    }
+
+    .word {
+      font-size: 24px;
       animation: fade 3s linear forwards;
     }
 
     @keyframes fade {
-      0% { opacity: 1; }
-      100% { opacity: 0; }
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.5); }
     }
   </style>
 </head>
 <body>
 
 <div id="controls">
-  <label>Intervalo (segundos): </label>
-  <input type="number" id="intervalInput" value="2" min="1">
+  <div>
+    <label>Intervalo (segundos): </label>
+    <input type="number" id="intervalInput" value="2" min="1">
+  </div>
+  <div>
+    <label>Cantidad de palabras: </label>
+    <input type="number" id="countInput" value="3" min="1">
+  </div>
   <button onclick="startWords()">Iniciar</button>
 </div>
+
+<div id="centerContainer"></div>
 
 <script>
   const words = [
@@ -53,24 +73,28 @@
     return words[Math.floor(Math.random() * words.length)];
   }
 
-  function createWord() {
-    const word = document.createElement("div");
-    word.className = "word";
-    word.innerText = getRandomWord();
+  function createWords() {
+    const container = document.getElementById("centerContainer");
+    const count = parseInt(document.getElementById("countInput").value);
 
-    // Posición aleatoria
-    word.style.left = Math.random() * window.innerWidth + "px";
-    word.style.top = Math.random() * window.innerHeight + "px";
+    // Limpiar palabras anteriores
+    container.innerHTML = "";
 
-    // Color aleatorio
-    word.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+    for (let i = 0; i < count; i++) {
+      const word = document.createElement("div");
+      word.className = "word";
+      word.innerText = getRandomWord();
 
-    document.body.appendChild(word);
+      // Color aleatorio
+      word.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
 
-    // Eliminar después de animación
-    setTimeout(() => {
-      word.remove();
-    }, 3000);
+      container.appendChild(word);
+
+      // Eliminar después de animación
+      setTimeout(() => {
+        word.remove();
+      }, 3000);
+    }
   }
 
   function startWords() {
@@ -80,7 +104,7 @@
       clearInterval(intervalId);
     }
 
-    intervalId = setInterval(createWord, seconds * 1000);
+    intervalId = setInterval(createWords, seconds * 1000);
   }
 </script>
 
