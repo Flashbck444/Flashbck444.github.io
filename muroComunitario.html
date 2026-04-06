@@ -7,13 +7,13 @@
 
   <style>
     body {
-      margin: 0;
-      background: #121212;
-      color: white;
-      font-family: Arial, sans-serif;
-      overflow-x: hidden;
-    }
-
+  margin: 0;
+  background: #121212;
+  color: white;
+  font-family: Arial;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
     .barra-inferior {
   position: fixed;
   bottom: 0; 
@@ -96,9 +96,9 @@
     const galeria = document.getElementById("galeria");
 
     function ajustarCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = 500;
-    }
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight * 2;
+}
 
     ajustarCanvas();
     window.addEventListener("resize", ajustarCanvas);
