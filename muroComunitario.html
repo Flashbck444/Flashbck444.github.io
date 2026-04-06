@@ -1,368 +1,267 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200;400;700&display=swap" rel="stylesheet">
-<title>Mi muro - Flashbck</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200;400;700&display=swap" rel="stylesheet">
+  <title>Mi muro - Flashbck</title>
 
-<style>
-  body {
-    margin: 0;
-    background: #121212;
-    color: white;
-    font-family: Arial, sans-serif;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-  .barra-inferior {
+  <style>
+    body {
+      margin: 0;
+      background: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .barra-inferior {
+      position: fixed;
+      bottom: 0; 
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background-color: #121212;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-right: 20px;
+      z-index: 1000;
+    }
+    button, input {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      font-family: Arial, sans-serif;
+    }
+    #lienzo {
+      display: block;
+      margin-top: 70px;    
+      margin-bottom: 70px;  
+      cursor: crosshair;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra superior -->
+  <div style="
     position: fixed;
-    bottom: 0; 
+    top: 0;
     left: 0;
     width: 100%;
     height: 70px;
     background-color: #121212;
+    color: white;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
-    padding-right: 20px;
+    padding-right: 10px;
+    font-family: Arial;
     z-index: 1000;
-  }
-  button, input {
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: none;
-    font-family: Arial, sans-serif;
-    cursor: pointer;
-  }
-  #canvasFondo, #lienzo {
-    display: block;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    margin: 0;
-    background: transparent;
-  }
-</style>
-</head>
-<body>
+  ">
+    <a href="index.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Inicio</a>
+    <a href="guias.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Guías</a>
+    <a href="muroComunitario.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Muro comunitario</a>
+    <a href="muro.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Mi muro</a>
+    <img src="FlashbckTag.png" style="width:140px;height:105px;border-radius:50%;">
+  </div>
 
-<!-- Barra superior -->
-<div style="
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 70px;
-background-color: #121212;
-color: white;
-display: flex;
-align-items: center;
-justify-content: flex-end;
-padding-right: 10px;
-font-family: Arial;
-z-index: 1000;
-">
-  <a href="index.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Inicio</a>
-  <a href="guias.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Guías</a>
-  <a href="muroComunitario.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Muro comunitario</a>
-  <a href="muro.html" style="color:white;text-decoration:none;font-family:'Oswald',sans-serif;margin-right:20px;">Mi muro</a>
-  <img src="FlashbckTag.png" style="width:140px;height:105px;border-radius:50%;">
-</div>
+  <!-- Barra inferior -->
+  <div class="barra-inferior">
+    <button onclick="guardarDibujo()">Guardar dibujo</button>
+    <input type="file" id="subirFoto" accept="image/*" />
+    <input type="color" id="colorLapiz" value="#FFFFFF" title="Color del lápiz">
+    <input type="range" id="grosorLapiz" min="1" max="20" value="3" title="Grosor del lápiz">
+    <button id="gomaBtn">Goma</button>
+  </div>
 
-<!-- Barra inferior -->
-<div class="barra-inferior">
-  <button onclick="guardarDibujo()">Guardar dibujo</button>
-  <input type="file" id="subirFoto" accept="image/*" />
-  <input type="color" id="colorLapiz" value="#FFFFFF" title="Color del lápiz">
-  <input type="range" id="grosorLapiz" min="1" max="20" value="3" title="Grosor del lápiz">
-  <button id="lapizBtn">Lápiz</button>
-  <button id="gomaBtn">Goma</button>
-  <button id="ningunoBtn">Ninguno</button>
-</div>
-
-<!-- CANVAS -->
-<canvas id="canvasFondo"></canvas>
-<canvas id="lienzo"></canvas>
+  <canvas id="lienzo"></canvas>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
-// ---------- FIREBASE ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyBwmJBZB2_1Vv3JsQjwlwmHfUIT0ZliAO8",
-  authDomain: "flashbck-5b9be.firebaseapp.com",
-  projectId: "flashbck-5b9be",
-  storageBucket: "flashbck-5b9be.firebasestorage.app",
-  messagingSenderId: "347817184946",
-  appId: "1:347817184946:web:3b6aab0a8193daadba03ab"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// ---------- CANVAS ----------
-const canvas = document.getElementById("lienzo");
-const ctx = canvas.getContext("2d");
-const canvasFondo = document.getElementById("canvasFondo");
-const ctxFondo = canvasFondo.getContext("2d");
-
-const alturaBarraSuperior = 70;
-const alturaBarraInferior = 70;
-
-function ajustarCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight - alturaBarraSuperior - alturaBarraInferior;
-  canvasFondo.width = canvas.width;
-  canvasFondo.height = canvas.height;
-}
-ajustarCanvas();
-window.addEventListener("resize", ajustarCanvas);
-
-// ---------- MODO DE DIBUJO ----------
-let dibujando = false;
-let modoActivo = "lapiz"; // "lapiz", "goma", "ninguno"
-const colorInput = document.getElementById("colorLapiz");
-const lapizBtn = document.getElementById("lapizBtn");
-const gomaBtn = document.getElementById("gomaBtn");
-const ningunoBtn = document.getElementById("ningunoBtn");
-
-function actualizarBotones() {
-  lapizBtn.style.backgroundColor = modoActivo === "lapiz" ? "#333" : "#121212";
-  gomaBtn.style.backgroundColor = modoActivo === "goma" ? "#333" : "#121212";
-  ningunoBtn.style.backgroundColor = modoActivo === "ninguno" ? "#333" : "#121212";
-}
-
-function actualizarCursor() {
-  switch(modoActivo) {
-    case "lapiz": canvas.style.cursor = "crosshair"; break;
-    case "goma": canvas.style.cursor = "cell"; break;
-    case "ninguno": canvas.style.cursor = "default"; break;
-  }
-}
-
-lapizBtn.addEventListener("click", () => { modoActivo = "lapiz"; actualizarBotones(); actualizarCursor(); });
-gomaBtn.addEventListener("click", () => { modoActivo = "goma"; actualizarBotones(); actualizarCursor(); });
-ningunoBtn.addEventListener("click", () => { modoActivo = "ninguno"; actualizarBotones(); actualizarCursor(); });
-actualizarBotones();
-actualizarCursor();
-
-// ---------- IMÁGENES ----------
-const imagenes = [];
-let imgSeleccionada = null;
-let offsetX = 0;
-let offsetY = 0;
-let redimensionando = false;
-let corner = null;
-const umbralResize = 45;
-
-function dibujarFondo() {
-  ctxFondo.clearRect(0,0,canvasFondo.width,canvasFondo.height);
-  imagenes.forEach(obj => ctxFondo.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
-  if (imgSeleccionada) {
-    const size = 10;
-    ctxFondo.fillStyle = "white";
-    [[0,0],[1,0],[0,1],[1,1]].forEach(([dx,dy]) => {
-      const cx = imgSeleccionada.x + dx*imgSeleccionada.width - size/2;
-      const cy = imgSeleccionada.y + dy*imgSeleccionada.height - size/2;
-      ctxFondo.fillRect(cx, cy, size, size);
-    });
-  }
-}
-
-// Cargar imágenes de Firebase
-const muroRef = ref(db, "muro");
-onValue(muroRef, snapshot => {
-  imagenes.length = 0;
-  const datos = snapshot.val();
-  if (!datos) return;
-  Object.entries(datos).forEach(([key, item]) => {
-    const img = new Image();
-    img.src = item.imagen;
-    img.onload = () => {
-      const w = item.width || img.width;
-      const h = item.height || img.height;
-      imagenes.push({ img, x: item.x ?? 50, y: item.y ?? 0, width: w, height: h, key: key });
-      dibujarFondo();
-    };
-  });
-});
-
-// Subir foto
-document.getElementById("subirFoto").addEventListener("change", function(e) {
-  const archivo = e.target.files[0];
-  if (!archivo) return;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    const img = new Image();
-    img.src = ev.target.result;
-    img.onload = () => {
-      const maxWidth = 500;
-      const maxHeight = 500;
-      let ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
-      let w = img.width * ratio;
-      let h = img.height * ratio;
-      const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now(), x:50, y:0, width:w, height:h });
-      imagenes.push({ img, x:50, y:0, width:w, height:h, key:newRef.key });
-      dibujarFondo();
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyBwmJBZB2_1Vv3JsQjwlwmHfUIT0ZliAO8",
+    authDomain: "flashbck-5b9be.firebaseapp.com",
+    projectId: "flashbck-5b9be",
+    storageBucket: "flashbck-5b9be.firebasestorage.app",
+    messagingSenderId: "347817184946",
+    appId: "1:347817184946:web:3b6aab0a8193daadba03ab"
   };
-  reader.readAsDataURL(archivo);
-});
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-  <script type="module">
-// ---------- FUNCIONES TOUCH/MOUSE ----------
-function getPos(e, c=canvas) {
-  let rect = c.getBoundingClientRect();
-  let x = e.touches ? e.touches[0].clientX - rect.left : e.offsetX;
-  let y = e.touches ? e.touches[0].clientY - rect.top : e.offsetY;
-  return { x, y };
-}
+  const canvas = document.getElementById("lienzo");
+  const ctx = canvas.getContext("2d");
 
-canvas.addEventListener("mousedown", startDrawOrSelect);
-canvas.addEventListener("touchstart", startDrawOrSelect, { passive: false });
-canvas.addEventListener("mousemove", moveDrawOrMove);
-canvas.addEventListener("touchmove", moveDrawOrMove, { passive: false });
-canvas.addEventListener("mouseup", endDrawOrMove);
-canvas.addEventListener("mouseleave", endDrawOrMove);
-canvas.addEventListener("touchend", endDrawOrMove);
-canvas.addEventListener("dblclick", eliminarImagen);
+  const alturaBarraSuperior = 0;
+  const alturaBarraInferior = 70;
 
-// Variables auxiliares para mover/redimensionar y dibujar
-let startResizeX = 0, startResizeY = 0;
-let prevX = 0, prevY = 0;
-
-// ---------- FUNCIONES PRINCIPALES ----------
-function startDrawOrSelect(e) {
-  e.preventDefault();
-  const {x,y} = getPos(e);
-  corner = null;
-  startResizeX = x;
-  startResizeY = y;
-  prevX = x;
-  prevY = y;
-
-  // Detectar imágenes
-  for (let i=imagenes.length-1; i>=0; i--) {
-    const obj = imagenes[i];
-    const c = detectarEsquina(obj, x, y);
-    if (c) { imgSeleccionada=obj; redimensionando=false; corner=c; return; }
-    if (x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height) { 
-      imgSeleccionada=obj; offsetX=x-obj.x; offsetY=y-obj.y; return; 
-    }
+  function ajustarCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight - alturaBarraSuperior - alturaBarraInferior;
   }
+  ajustarCanvas();
+  window.addEventListener("resize", ajustarCanvas);
 
-  // Activar dibujo
-  if (modoActivo !== "ninguno") dibujando = true;
-}
+  // DIBUJO DE LÍNEAS CON LÁPIZ Y GOMA
+  let dibujando = false;
+  let modoGoma = false; // nueva variable para la goma
+  const colorInput = document.getElementById("colorLapiz");
+  const gomaBtn = document.getElementById("gomaBtn");
 
-function moveDrawOrMove(e) {
-  if (!dibujando && !imgSeleccionada) return;
-  e.preventDefault();
-  const {x,y} = getPos(e);
+  gomaBtn.addEventListener("click", () => {
+    modoGoma = !modoGoma;
+    gomaBtn.style.backgroundColor = modoGoma ? "#555" : "#121212";
+  });
 
-  // Mover/redimensionar imágenes
-  if (corner && imgSeleccionada) {
-    const dx = x - startResizeX, dy = y - startResizeY;
-    if (!redimensionando && Math.sqrt(dx*dx + dy*dy) < umbralResize) return;
-    redimensionando = true;
-    const minSize = 20;
-    switch(corner){
-      case "tl": imgSeleccionada.width += imgSeleccionada.x - x; imgSeleccionada.height += imgSeleccionada.y - y; imgSeleccionada.x = x; imgSeleccionada.y = y; break;
-      case "tr": imgSeleccionada.width = x - imgSeleccionada.x; imgSeleccionada.height += imgSeleccionada.y - y; imgSeleccionada.y = y; break;
-      case "bl": imgSeleccionada.width += imgSeleccionada.x - x; imgSeleccionada.height = y - imgSeleccionada.y; imgSeleccionada.x = x; break;
-      case "br": imgSeleccionada.width = x - imgSeleccionada.x; imgSeleccionada.height = y - imgSeleccionada.y; break;
-    }
-    if (imgSeleccionada.width < minSize) imgSeleccionada.width = minSize;
-    if (imgSeleccionada.height < minSize) imgSeleccionada.height = minSize;
-    startResizeX = x; startResizeY = y;
-    dibujarFondo();
-    return;
-  }
+  canvas.addEventListener("mousedown", () => dibujando = true);
+  canvas.addEventListener("mouseup", () => { dibujando = false; ctx.beginPath(); });
 
-  if (imgSeleccionada && !corner) {
-    imgSeleccionada.x = x - offsetX;
-    imgSeleccionada.y = y - offsetY;
-    // Limitar dentro del canvas
-    if (imgSeleccionada.y < 0) imgSeleccionada.y = 0;
-    if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) imgSeleccionada.y = canvas.height - imgSeleccionada.height;
-    if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
-    if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) imgSeleccionada.x = canvas.width - imgSeleccionada.width;
-    dibujarFondo();
-  }
+  canvas.addEventListener("mousemove", (e) => {
+    if (!dibujando) return;
 
-  // Dibujo
-  if (dibujando && modoActivo !== "ninguno") {
-    ctx.lineWidth = document.getElementById("grosorLapiz").value;
+    const grosor = document.getElementById("grosorLapiz").value;
+    ctx.lineWidth = grosor;
     ctx.lineCap = "round";
-    ctx.strokeStyle = modoActivo === "goma" ? "#121212" : colorInput.value; // goma pinta transparente (color de fondo)
-    ctx.beginPath();
-    ctx.moveTo(prevX, prevY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    prevX = x;
-    prevY = y;
-  }
-}
 
-function endDrawOrMove(e) {
-  if (imgSeleccionada && imgSeleccionada.key) {
-    update(ref(db, "muro/" + imgSeleccionada.key), { x: imgSeleccionada.x, y: imgSeleccionada.y, width: imgSeleccionada.width, height: imgSeleccionada.height });
-  }
-  imgSeleccionada = null;
-  dibujando = false;
-  redimensionando = false;
-  corner = null;
-}
-
-// ---------- DOBLE CLICK PARA ELIMINAR IMAGEN ----------
-function eliminarImagen(e) {
-  const {x, y} = getPos(e);
-  for (let i = imagenes.length - 1; i >= 0; i--) {
-    const obj = imagenes[i];
-    if (x >= obj.x && x <= obj.x + obj.width && y >= obj.y && y <= obj.y + obj.height) {
-      if (obj.key) remove(ref(db, "muro/" + obj.key));
-      imagenes.splice(i, 1);
-      dibujarFondo();
-      return;
+    if (modoGoma) {
+      ctx.globalCompositeOperation = "destination-out"; // borra
+      ctx.strokeStyle = "rgba(0,0,0,1)";
+    } else {
+      ctx.globalCompositeOperation = "source-over"; // dibuja normal
+      ctx.strokeStyle = colorInput.value;
     }
+
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  });
+
+  window.guardarDibujo = function() {
+    const data = canvas.toDataURL("image/png");
+    push(ref(db, "muro"), { imagen: data, fecha: Date.now() });
+  };
+
+  // IMÁGENES MÓVILES
+  const imagenes = [];
+  let imgSeleccionada = null;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  function dibujarCanvas() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    imagenes.forEach(obj => ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
   }
-}
 
-// ---------- GUARDAR TODO EL CANVAS (IMÁGENES + DIBUJO) ----------
-function guardarDibujo() {
-  // Crear canvas temporal
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  const tempCtx = tempCanvas.getContext("2d");
+  const muroRef = ref(db, "muro");
+  onValue(muroRef, snapshot => {
+    imagenes.length = 0;
+    const datos = snapshot.val();
+    if (!datos) return;
+    Object.entries(datos).forEach(([key, item]) => {
+      const img = new Image();
+      img.src = item.imagen;
+      img.onload = () => {
+        const w = item.width || img.width;
+        const h = item.height || img.height;
+        imagenes.push({
+          img,
+          x: item.x ?? 50,
+          y: item.y ?? alturaBarraSuperior,
+          width: w,
+          height: h,
+          key: key
+        });
+        dibujarCanvas();
+      };
+    });
+  });
 
-  // Dibujar fondo + imágenes
-  tempCtx.drawImage(canvasFondo, 0, 0);
+  document.getElementById("subirFoto").addEventListener("change", function(e) {
+    const archivo = e.target.files[0];
+    if (!archivo) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.src = ev.target.result;
+      img.onload = () => {
+        // Mantener resolución original o escalar si es demasiado grande
+        const maxWidth = 500;
+        const maxHeight = 500;
+        let ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        let w = img.width * ratio;
+        let h = img.height * ratio;
 
-  // Dibujar capa de dibujo
-  tempCtx.drawImage(canvas, 0, 0);
+        const newRef = push(muroRef, { imagen: ev.target.result, fecha: Date.now(), x: 50, y: alturaBarraSuperior, width: w, height: h });
+        imagenes.push({ img, x:50, y:alturaBarraSuperior, width:w, height:h, key: newRef.key });
+        dibujarCanvas();
+      };
+    };
+    reader.readAsDataURL(archivo);
+  });
 
-  // Descargar
-  const link = document.createElement("a");
-  link.download = "mi_dibujo.png";
-  link.href = tempCanvas.toDataURL();
-  link.click();
-}
+  // ARRASTRAR IMÁGENES
+  canvas.addEventListener("mousedown", e => {
+    const x = e.offsetX;
+    const y = e.offsetY;
+    for (let i = imagenes.length-1; i>=0; i--) {
+      const obj = imagenes[i];
+      if (x >= obj.x && x <= obj.x+obj.width && y >= obj.y && y <= obj.y+obj.height) {
+        imgSeleccionada = obj;
+        offsetX = x - obj.x;
+        offsetY = y - obj.y;
+        break;
+      }
+    }
+  });
 
-// ---------- DETECTAR ESQUINAS PARA REDIMENSIONAR ----------
-function detectarEsquina(obj, x, y){
-  const size = 10;
-  const corners = [
-    {x: obj.x, y: obj.y, name:"tl"},
-    {x: obj.x + obj.width, y: obj.y, name:"tr"},
-    {x: obj.x, y: obj.y + obj.height, name:"bl"},
-    {x: obj.x + obj.width, y: obj.y + obj.height, name:"br"}
-  ];
-  for(let c of corners) if(x >= c.x - size && x <= c.x + size && y >= c.y - size && y <= c.y + size) return c.name;
-  return null;
-}
+  canvas.addEventListener("mousemove", e => {
+    if (!imgSeleccionada) return;
+    imgSeleccionada.x = e.offsetX - offsetX;
+    imgSeleccionada.y = e.offsetY - offsetY;
+
+    if (imgSeleccionada.y < alturaBarraSuperior) imgSeleccionada.y = alturaBarraSuperior;
+    if (imgSeleccionada.y + imgSeleccionada.height > canvas.height) 
+      imgSeleccionada.y = canvas.height - imgSeleccionada.height;
+
+    if (imgSeleccionada.x < 0) imgSeleccionada.x = 0;
+    if (imgSeleccionada.x + imgSeleccionada.width > canvas.width) 
+      imgSeleccionada.x = canvas.width - imgSeleccionada.width;
+
+    dibujarCanvas();
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    if (imgSeleccionada && imgSeleccionada.key) {
+      update(ref(db, "muro/" + imgSeleccionada.key), {
+        x: imgSeleccionada.x,
+        y: imgSeleccionada.y
+      });
+    }
+    imgSeleccionada = null;
+  });
+
+  // ELIMINAR IMÁGENES
+  canvas.addEventListener("dblclick", e => {
+    const x = e.offsetX;
+    const y = e.offsetY;
+    for (let i = imagenes.length-1; i>=0; i--) {
+      const obj = imagenes[i];
+      if (x >= obj.x && x <= obj.x+obj.width && y >= obj.y && y <= obj.y+obj.height) {
+        if (obj.key) remove(ref(db, "muro/" + obj.key));
+        imagenes.splice(i,1);
+        dibujarCanvas();
+        break;
+      }
+    }
+  });
 </script>
+
 </body>
 </html>
