@@ -1,28 +1,150 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200;400;700&display=swap" rel="stylesheet">
-    <title>Muro Comunitario - Flashbck</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi muro colaborativo</title>
+  <style>
+    body {
+      margin: 0;
+      background: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .barra-superior {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background: #121212;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding-right: 40px;
+      z-index: 1000;
+    }
+
+    button, input {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      font-family: Arial;
+    }
+
+    #lienzo {
+      margin-top: 70px;
+      display: block;
+      cursor: crosshair;
+      background: transparent;
+    }
+
+    #galeria {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .post {
+      background: #1d1d1d;
+      border-radius: 16px;
+      padding: 10px;
+    }
+
+    .post img {
+      width: 100%;
+      border-radius: 12px;
+    }
+  </style>
 </head>
+<body>
+  <div class="barra-superior">
+    <button onclick="guardarDibujo()">Guardar dibujo</button>
+    <input type="file" id="subirFoto" accept="image/*" />
+  </div>
 
-<body style="margin:0; background:black; color:white; font-family:Arial;">
-    
-<div style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 70px;
-    background-color: #121212;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 10px;
-    font-family: Arial;
-    z-index: 1000;
-    ">
+  <canvas id="lienzo" width="1400" height="500"></canvas>
+  <div id="galeria"></div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    </body>
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.firebasestorage.app",
+      messagingSenderId: "123456789",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const canvas = document.getElementById("lienzo");
+    const ctx = canvas.getContext("2d");
+    const galeria = document.getElementById("galeria");
+    let dibujando = false;
+
+    canvas.addEventListener("mousedown", () => dibujando = true);
+    canvas.addEventListener("mouseup", () => {
+      dibujando = false;
+      ctx.beginPath();
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!dibujando) return;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "white";
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    window.guardarDibujo = async function () {
+      const data = canvas.toDataURL("image/png");
+      await addDoc(collection(db, "muro"), {
+        imagen: data,
+        fecha: Date.now()
+      });
+      cargarMuro();
+    };
+
+    document.getElementById("subirFoto").addEventListener("change", async (e) => {
+      const archivo = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = async function (ev) {
+        await addDoc(collection(db, "muro"), {
+          imagen: ev.target.result,
+          fecha: Date.now()
+        });
+        cargarMuro();
+      };
+      reader.readAsDataURL(archivo);
+    });
+
+    async function cargarMuro() {
+      galeria.innerHTML = "";
+      const q = query(collection(db, "muro"), orderBy("fecha", "desc"));
+      const docs = await getDocs(q);
+
+      docs.forEach((doc) => {
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `<img src="${doc.data().imagen}">`;
+        galeria.appendChild(div);
+      });
+    }
+
+    cargarMuro();
+  </script>
+</body>
 </html>
