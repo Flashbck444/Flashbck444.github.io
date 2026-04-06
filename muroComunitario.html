@@ -34,6 +34,7 @@
     border-radius: 10px;
     border: none;
     font-family: Arial, sans-serif;
+    cursor: pointer;
   }
   #lienzo {
     display: block;
@@ -116,7 +117,7 @@ const gomaBtn = document.getElementById("gomaBtn");
 
 gomaBtn.addEventListener("click", () => {
   modoGoma = !modoGoma;
-  gomaBtn.style.backgroundColor = modoGoma ? "#555" : "#121212";
+  gomaBtn.style.backgroundColor = modoGoma ? "#333" : "#121212"; // menos oscuro
 });
 
 canvas.addEventListener("mousedown", () => dibujando = true);
@@ -154,16 +155,15 @@ let imgSeleccionada = null;
 let offsetX = 0;
 let offsetY = 0;
 let redimensionando = false;
-let corner = null; // esquina seleccionada para redimensionar
+let corner = null;
+const umbralResize = 15; // px mínimo para empezar a redimensionar
 
 function dibujarCanvas() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   imagenes.forEach(obj => ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height));
-  // si hay imagen seleccionada, dibujar esquinas
   if (imgSeleccionada) {
     const size = 10;
     ctx.fillStyle = "white";
-    // esquinas: TL, TR, BL, BR
     [[0,0],[1,0],[0,1],[1,1]].forEach(([dx,dy], i) => {
       const cx = imgSeleccionada.x + dx*imgSeleccionada.width - size/2;
       const cy = imgSeleccionada.y + dy*imgSeleccionada.height - size/2;
@@ -183,14 +183,7 @@ onValue(muroRef, snapshot => {
     img.onload = () => {
       const w = item.width || img.width;
       const h = item.height || img.height;
-      imagenes.push({
-        img,
-        x: item.x ?? 50,
-        y: item.y ?? alturaBarraSuperior,
-        width: w,
-        height: h,
-        key: key
-      });
+      imagenes.push({ img, x: item.x ?? 50, y: item.y ?? alturaBarraSuperior, width: w, height: h, key: key });
       dibujarCanvas();
     };
   });
@@ -233,16 +226,22 @@ function detectarEsquina(obj, x, y) {
   return null;
 }
 
+let startResizeX = 0;
+let startResizeY = 0;
+
 canvas.addEventListener("mousedown", e => {
   const x = e.offsetX;
   const y = e.offsetY;
   corner = null;
+  startResizeX = x;
+  startResizeY = y;
+
   for (let i = imagenes.length-1; i>=0; i--) {
     const obj = imagenes[i];
     const c = detectarEsquina(obj, x, y);
     if (c) {
       imgSeleccionada = obj;
-      redimensionando = true;
+      redimensionando = false; // aún no empieza, requiere umbral
       corner = c;
       return;
     }
@@ -258,7 +257,16 @@ canvas.addEventListener("mousedown", e => {
 canvas.addEventListener("mousemove", e => {
   const x = e.offsetX;
   const y = e.offsetY;
-  if (redimensionando && imgSeleccionada) {
+
+  // REDIMENSIONAMIENTO
+  if (corner && imgSeleccionada) {
+    const dx = x - startResizeX;
+    const dy = y - startResizeY;
+    if (!redimensionando) {
+      if (Math.sqrt(dx*dx + dy*dy) < umbralResize) return;
+      redimensionando = true;
+    }
+
     const minSize = 20;
     switch(corner) {
       case "tl":
@@ -284,10 +292,15 @@ canvas.addEventListener("mousemove", e => {
     }
     if(imgSeleccionada.width < minSize) imgSeleccionada.width = minSize;
     if(imgSeleccionada.height < minSize) imgSeleccionada.height = minSize;
+
+    startResizeX = x;
+    startResizeY = y;
     dibujarCanvas();
     return;
   }
-  if (imgSeleccionada && !redimensionando) {
+
+  // MOVER IMÁGENES
+  if (imgSeleccionada && !corner) {
     imgSeleccionada.x = x - offsetX;
     imgSeleccionada.y = y - offsetY;
     if (imgSeleccionada.y < alturaBarraSuperior) imgSeleccionada.y = alturaBarraSuperior;
@@ -328,7 +341,6 @@ canvas.addEventListener("dblclick", e => {
     }
   }
 });
-
 </script>
 </body>
 </html>
