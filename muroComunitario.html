@@ -111,6 +111,10 @@ let offsetX = 0;
 let offsetY = 0;
 let redimensionando = false;
 let corner = null;
+let pinchStartDist = 0;
+let pinchStartWidth = 0;
+let pinchStartHeight = 0;
+let modoPinch = false;
 const umbralResize = 45;
 
 function dibujarCanvas() {
@@ -254,6 +258,109 @@ canvas.addEventListener("dblclick", e=>{
       return;
     }
   }
+});
+
+  function getTouchPos(e){
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: e.touches[0].clientX - rect.left,
+    y: e.touches[0].clientY - rect.top
+  };
+}
+
+function getDist(t1, t2){
+  const dx = t2.clientX - t1.clientX;
+  const dy = t2.clientY - t1.clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+canvas.addEventListener("touchstart", e=>{
+  e.preventDefault();
+
+  // 👉 PINCH (2 dedos)
+  if(e.touches.length === 2){
+    modoPinch = true;
+    pinchStartDist = getDist(e.touches[0], e.touches[1]);
+
+    // tomar imagen seleccionada (la última tocada)
+    const pos = getTouchPos(e);
+    const x = pos.x;
+    const y = pos.y;
+
+    for(let i=imagenes.length-1;i>=0;i--){
+      const obj = imagenes[i];
+      if(x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height){
+        imgSeleccionada = obj;
+        pinchStartWidth = obj.width;
+        pinchStartHeight = obj.height;
+        return;
+      }
+    }
+    return;
+  }
+
+  // 👉 1 dedo (mover)
+  modoPinch = false;
+
+  const pos = getTouchPos(e);
+  const x = pos.x;
+  const y = pos.y;
+
+  for(let i=imagenes.length-1;i>=0;i--){
+    const obj = imagenes[i];
+    if(x>=obj.x && x<=obj.x+obj.width && y>=obj.y && y<=obj.y+obj.height){ 
+      imgSeleccionada=obj; 
+      offsetX=x-obj.x; 
+      offsetY=y-obj.y; 
+      return; 
+    }
+  }
+});
+
+canvas.addEventListener("touchmove", e=>{
+  e.preventDefault();
+
+  // 👉 PINCH ZOOM
+  if(modoPinch && e.touches.length === 2 && imgSeleccionada){
+    const nuevaDist = getDist(e.touches[0], e.touches[1]);
+    const escala = nuevaDist / pinchStartDist;
+
+    imgSeleccionada.width = pinchStartWidth * escala;
+    imgSeleccionada.height = pinchStartHeight * escala;
+
+    dibujarCanvas();
+    return;
+  }
+
+  // 👉 MOVER
+  if(imgSeleccionada && !modoPinch){
+    const pos = getTouchPos(e);
+    const x = pos.x;
+    const y = pos.y;
+
+    imgSeleccionada.x = x - offsetX;
+    imgSeleccionada.y = y - offsetY;
+
+    dibujarCanvas();
+  }
+});
+
+  modoPinch = false;
+  imgSeleccionada = null;
+});
+
+canvas.addEventListener("touchend", ()=>{
+  if(imgSeleccionada && imgSeleccionada.key){
+    update(ref(db,"muro/"+imgSeleccionada.key),{
+      x:imgSeleccionada.x,
+      y:imgSeleccionada.y,
+      width:imgSeleccionada.width,
+      height:imgSeleccionada.height
+    });
+  }
+
+  modoPinch = false;
+  imgSeleccionada = null;
 });
 
 // -----------------------------------
